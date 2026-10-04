@@ -1,0 +1,15 @@
+node_modules/
+dist/
+verification/
+*.log
+.env*
+settings.json
+chat.json
+window.json
+mind.json
+*.bin
+*.pem
+*.p8
+*.key
+Thumbs.db
+.DS_Store

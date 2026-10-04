@@ -1,0 +1,82 @@
+/* Tokens shared by the pet and the panel. Light / dark follow Windows' app theme. */
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb;
+  --plane: #f4f3ef;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #7a7873;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --ring: rgba(11, 11, 11, 0.1);
+  --hover: rgba(11, 11, 11, 0.05);
+  --shadow: 0 6px 22px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.12);
+  --c-xcode: #2a78d6;
+  --c-codemagic: #eb6834;
+  --c-github: #1baf7a;
+  --c-local: #898781;
+  --good: #0ca30c;
+  --good-text: #006300;
+  --warn: #fab219;
+  --warn-text: #8a5a00;
+  --crit: #d03b3b;
+  --crit-text: #b42323;
+  --meter-track: #e4eefb;
+  --meter-fill: #2a78d6;
+  --accent: #2a78d6;
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #1a1a19;
+    --plane: #0d0d0d;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #9a988f;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --ring: rgba(255, 255, 255, 0.1);
+    --hover: rgba(255, 255, 255, 0.06);
+    --shadow: 0 6px 22px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --c-xcode: #3987e5;
+    --c-codemagic: #d95926;
+    --c-github: #199e70;
+    --good-text: #0ca30c;
+    --warn-text: #fab219;
+    --crit-text: #ec6a6a;
+    --meter-track: #16325a;
+    --meter-fill: #3987e5;
+    --accent: #3987e5;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #1a1a19;
+  --plane: #0d0d0d;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #9a988f;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --ring: rgba(255, 255, 255, 0.1);
+  --hover: rgba(255, 255, 255, 0.06);
+  --shadow: 0 6px 22px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --c-xcode: #3987e5;
+  --c-codemagic: #d95926;
+  --c-github: #199e70;
+  --good-text: #0ca30c;
+  --warn-text: #fab219;
+  --crit-text: #ec6a6a;
+  --meter-track: #16325a;
+  --meter-fill: #3987e5;
+  --accent: #3987e5;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: transparent; }
+body { color: var(--ink); font-size: 13px; line-height: 1.4; -webkit-font-smoothing: antialiased; user-select: none; }
+button { font: inherit; color: inherit; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--c); }
+.num { font-variant-numeric: tabular-nums; }
+[hidden] { display: none !important; }

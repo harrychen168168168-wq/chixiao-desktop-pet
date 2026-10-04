@@ -1,0 +1,218 @@
+/* The pet window is transparent; the dragon stands over its cloud platform. */
+body { overflow: hidden; }
+#pet-anim, #pet-img { transform: translateX(calc(var(--facing, 1) * 26px)) scaleX(var(--facing, 1)); }
+#status-dragon-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; transform: translateX(calc(var(--facing, 1) * 26px)) scaleX(var(--facing, 1)); }
+#status-fire-fx { position: absolute; left: -28px; top: -28px; width: calc(100% + 56px); height: calc(100% + 56px); pointer-events: none; z-index: 4; transform: translateX(calc(var(--facing, 1) * 26px)) scaleX(var(--facing, 1)); }
+#status-cloud-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+#toy { position: absolute; width: 9px; height: 9px; border-radius: 50%; left: 78%; top: 26%; background: #ffe4a0; box-shadow: 0 0 6px 2px #ffcb55, 0 0 16px 5px #e9942933; pointer-events: none; animation: toy-glow 1.2s ease-in-out infinite alternate; }
+@keyframes toy-glow { from { opacity: .65; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #toy, #zzz i, #emote i { animation: none; opacity: 1; } }
+#root { width: 280px; padding: 8px 10px 10px; display: flex; flex-direction: column; align-items: center; }
+
+/* ---- speech bubble: builds running now / just finished ---- */
+#bubble {
+  position: relative; width: 100%; margin-bottom: 12px; padding: 8px 10px;
+  background: var(--surface); border-radius: 12px; box-shadow: var(--shadow), 0 0 0 1px var(--ring);
+}
+#bubble::after { /* tail pointing at the dragon */
+  content: ""; position: absolute; left: 50%; bottom: -7px; width: 14px; height: 14px; margin-left: -7px;
+  background: var(--surface); transform: rotate(45deg); box-shadow: 1px 1px 0 0 var(--ring);
+}
+.b-item { display: grid; grid-template-columns: 10px 1fr auto; column-gap: 7px; align-items: baseline; }
+.b-item + .b-item { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--grid); }
+.b-item .dot { transform: translateY(-1px); }
+.b-name { font-weight: 600; font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-right { white-space: nowrap; font-size: 12px; }
+.b-right small { font-size: 11px; color: var(--muted); }
+.b-line { grid-column: 2 / span 2; font-size: 12px; color: var(--ink-2); }
+.b-time { font-weight: 650; font-size: 14px; color: var(--ink); }
+.b-item.running .dot { animation: pulse 1.6s ease-in-out infinite; }
+.b-done { font-size: 12px; font-weight: 600; }
+.b-done.good { color: var(--good-text); }
+.b-done.bad { color: var(--crit-text); }
+.b-done.neutral { color: var(--ink-2); }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+/* the dragon's latest chat reply */
+.b-item.saying { display: block; }
+.b-say { display: block; font-size: 12.5px; line-height: 1.5; color: var(--ink); }
+.b-say::before { content: "🐉 "; }
+.b-note { display: block; margin-top: 3px; font-size: 11.5px; font-weight: 600; color: var(--crit-text); }
+/* memory / video memory / temperature alert: what is high and who is using it */
+.b-item.alert .dot { --c: var(--warn); animation: pulse 1.2s ease-in-out infinite; }
+.b-item.alert.crit .dot { --c: var(--crit); }
+.b-item.alert .b-name { color: var(--warn-text); }
+.b-item.alert.crit .b-name { color: var(--crit-text); }
+.b-item.alert.recovered .dot { --c: var(--good); animation: none; }
+.b-item.alert.recovered .b-name { color: var(--ink); }
+.b-hogs { grid-column: 2 / span 2; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 1px; margin-top: 2px; font-size: 12px; }
+.b-hogs .h-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-hogs .h-val { font-weight: 650; text-align: right; }
+.b-hogs .h-wait { grid-column: 1 / -1; color: var(--muted); }
+
+/* ---- the dragon ---- */
+#pet { position: relative; z-index: 2; width: 220px; height: 128px; display: grid; place-items: center; cursor: grab; touch-action: none; }
+#pet:active { cursor: grabbing; }
+/* The dragon moves by itself (frames of an AI-generated loop, see dev/animate.js); the picture as a whole stays put. */
+#pet-anim { pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,.3)); } /* size set from the frames' shape in pet.js */
+#pet-img { width: 220px; height: 128px; object-fit: contain; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,.3)); }
+#pet-emoji { font-size: 92px; line-height: 1; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,.25)); }
+#pet:hover #pet-anim, #pet:hover #pet-img, #pet:hover #pet-emoji { filter: drop-shadow(0 6px 10px rgba(0,0,0,.35)) brightness(1.05); }
+/* sleeping: little z's drifting up from the dragon's head (lying, the head is at the lower left of the frame);
+   white with a dark blue outline so they show on light and dark wallpapers alike */
+#zzz { position: absolute; left: 20%; top: 46%; pointer-events: none; }
+#zzz, #emote { transform: translateX(calc(var(--facing, 1) * 26px)); }
+#zzz i {
+  position: absolute; font: italic 800 16px/1 system-ui, sans-serif; color: #fff;
+  text-shadow: 0 0 2px #1e3a8a, 0 0 2px #1e3a8a, 0 0 4px #1e3a8a, 0 1px 4px rgba(0,0,0,.45); opacity: 0;
+  animation: zfloat 3s ease-out infinite;
+}
+#zzz i:nth-child(2) { animation-delay: 1s; font-size: 20px; }
+#zzz i:nth-child(3) { animation-delay: 2s; font-size: 24px; }
+@keyframes zfloat {
+  0% { transform: translate(0, 0) scale(.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(26px, -46px) scale(1.1); opacity: 0; }
+}
+/* what it feels, floating up from its head like the z's: hearts when stroked, a vein when annoyed, … (pet.js emote()).
+   Standing, the head is at the upper left of the frame; lying, at the lower left. The dragon itself is not moved. */
+#emote { position: absolute; left: 24%; top: 6%; pointer-events: none; }
+#emote.low { left: 20%; top: 46%; }
+#emote i {
+  position: absolute; font: normal 800 18px/1 system-ui, "Segoe UI Symbol", sans-serif; opacity: 0;
+  text-shadow: 0 0 2px #fff, 0 0 2px #fff, 0 0 4px #fff, 0 1px 4px rgba(0,0,0,.45);
+  animation: efloat 1.9s ease-out forwards;
+}
+#emote i:nth-child(2) { animation-delay: .35s; font-size: 22px; margin-left: 14px; }
+#emote i:nth-child(3) { animation-delay: .7s; font-size: 16px; margin-left: -8px; }
+#emote.heart i { color: #e5484d; }
+#emote.anger i { color: #d03b3b; font-size: 24px; }
+#emote.sweat i { color: #2a78d6; }
+#emote.note i { color: #c98a00; }
+#emote.bang i { color: #d03b3b; font-size: 26px; font-style: italic; }
+@keyframes efloat {
+  0% { transform: translate(0, 0) scale(.6); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: translate(-10px, -40px) scale(1.15); opacity: 0; }
+}
+#busy-badge {
+  position: absolute; right: 0; top: 4px; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  color: #fff; background: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+
+/* Live readings on a warm ivory auspicious cloud; its top touches the dragon's paws. */
+#stats {
+  position: relative; z-index: 1; flex-shrink: 0; width: 260px; height: 142px;
+  margin-top: -46px; padding: 48px 38px 20px; border-radius: 0;
+  background: url('assets/cloud-platform-v1.png') center / 100% 100% no-repeat;
+  filter: drop-shadow(0 4px 5px rgba(30,18,5,.22));
+  color: #2d1d0c; box-shadow: none; cursor: grab; touch-action: none;
+  /* Brush-shaped Kai strokes suit the cloud and remain legible at desktop size. */
+  font-family: "KaiTi", "STKaiti", "DFKai-SB", "Noto Serif SC", serif;
+}
+#stats::before {
+  content: ''; position: absolute; left: 36px; right: 36px; top: 34px; height: 100px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,252,241,.97) 25%, rgba(255,252,241,.85) 45%, rgba(255,252,241,.4) 65%, rgba(255,252,241,0) 85%);
+  pointer-events: none;
+}
+/* Restore the approved v7 centered lines, sizes and baseline spacing exactly.
+   All material effects stay inside glyphs; they consume no layout space. */
+.row {
+  --inscription-level: 0; --reading-color: #3d2b16; --inscription-patina: #457571; --inscription-shine: #89a69a;
+  position: relative; z-index: 2; display: flex; justify-content: center; align-items: center;
+  gap: 8px; height: 22px; font-size: 16px; line-height: 22px;
+  text-shadow: 0 1px 0 rgba(255,255,255,.85);
+}
+.row .k { flex-shrink: 0; color: #3d2b16; font-weight: 600; letter-spacing: 1px; }
+.row .v {
+  text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap;
+  color: var(--reading-color);
+}
+.reading-text { white-space: pre; }
+.ink { position: relative; display: inline-block; font-size: inherit; font-weight: 600; line-height: inherit; }
+.reading-total, .reading-unit, .sensor-name { font-size: inherit; font-weight: inherit; }
+.ink-light {
+  position: absolute; inset: 0; pointer-events: none;
+  color: transparent; -webkit-text-fill-color: transparent; background-clip: text; -webkit-background-clip: text;
+  background-image: linear-gradient(110deg, var(--inscription-patina) 35%, var(--inscription-shine) 48%, var(--inscription-patina) 61%);
+  background-size: 240% 100%; background-position: var(--ink-position, 50%) 0;
+  opacity: calc(var(--inscription-level) * .65); text-shadow: none;
+}
+.ink-light::after { content: attr(data-ink); }
+#row-vram { --inscription-patina: #a17a2b; --inscription-shine: #c4a457; }
+#v-temp { display: inline-flex; gap: 6px; }
+#v-temp.dual { font-size: 12px; }
+#v-temp [data-sensor] { transition: color 1.4s ease; }
+/* Warmth runs through the strokes like heated gold inlay. The solid ink remains
+   readable beneath it; no fire, ornaments, blur or movement surround the text. */
+#v-temp .ink-light {
+  background-image: linear-gradient(0deg, transparent 20%, #c76a22 38%, #dfa746 47%, #d08b31 55%, transparent 74%);
+  background-size: 100% 260%; background-position: 0 var(--heat-ink-position, 50%);
+  opacity: calc(var(--inscription-level) * (.55 + var(--inscription-phase, .5) * .2));
+}
+#stats[data-inscription-mode="combined"] .ink { color: #843827; }
+#stats[data-inscription-mode="combined"] .row .v { color: #843827; }
+#stats[data-inscription-mode="combined"] .ink-light {
+  background-image: linear-gradient(110deg, #8c3524 35%, #c7a04e 48%, #8c3524 61%);
+  background-size: 240% 100%; background-position: var(--ink-position, 50%) 0;
+  opacity: var(--inscription-unity, .5);
+}
+#stats[data-inscription-mode="combined"] .k { color: #763c28; }
+.meter { display: none; height: 4px; border-radius: 3px; background: #ddc9a6; overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; border-radius: 3px; background: linear-gradient(90deg, #ba7a29, #daa650); transition: width .6s ease; }
+.meter i.warn { background: var(--warn); }
+.meter i.crit { background: var(--crit); }
+@media (prefers-reduced-motion: reduce) { #v-temp [data-sensor] { transition: none; } }
+
+/* Retreat behind the real screen edge. The cloud keeps its normal layout; it
+   dissolves as the dragon leaves, instead of showing cut-off readings. */
+#root { transform: translateX(var(--edge-offset, 0px)); transition: transform 1s cubic-bezier(.22,.7,.22,1); }
+#stats { transition: opacity .55s ease; }
+body[data-edge] #bubble { display: none; }
+body[data-edge="tucking"], body[data-edge="hidden"], body[data-edge="peeking"] { --edge-offset: 280px; }
+body[data-edge-side="left"][data-edge="tucking"], body[data-edge-side="left"][data-edge="hidden"], body[data-edge-side="left"][data-edge="peeking"] { --edge-offset: -280px; }
+body[data-edge="tucking"] #stats, body[data-edge="hidden"] #stats, body[data-edge="peeking"] #stats { opacity: 0; pointer-events: none; }
+body[data-edge="hidden"] #root, body[data-edge="peeking"] #root { pointer-events: none; }
+body[data-edge] #status-fire-fx, body[data-edge] #emote, body[data-edge] #zzz, body[data-edge] #busy-badge { visibility: hidden; }
+/* The standing sprite stays fully offscreen. This separate head has its neck
+   connecting horizontally behind the edge, with no visible chest or forelegs. */
+#edge-peek {
+  position: fixed; z-index: 10; right: -18px; top: 22px; width: 120px; height: 120px;
+  padding: 0; border: 0; background: none; cursor: pointer;
+  transform: translateX(125px); opacity: 0; pointer-events: none;
+  transition: transform .7s cubic-bezier(.3,0,.2,1), opacity .3s;
+}
+#edge-peek span { display: block; width: 100%; height: 100%; transform-origin: 100% 70%; pointer-events: none; }
+#edge-peek img { display: block; width: 100%; height: 100%; pointer-events: none; }
+body[data-edge-side="left"] #edge-peek { left: -18px; right: auto; transform: translateX(-125px); }
+body[data-edge-side="left"] #edge-peek img { transform: scaleX(-1); }
+body[data-edge-side="left"] #edge-peek span { transform-origin: 0 70%; }
+body[data-edge="peeking"] #edge-peek { transform: translateX(0); opacity: 1; pointer-events: auto; }
+body[data-edge="peeking"] #edge-peek span { animation: edge-curious 4.3s ease-in-out both; }
+body[data-edge-side="left"][data-edge="peeking"] #edge-peek span { animation-name: edge-curious-left; }
+body[data-edge="returning"] #edge-peek { transition-duration: .22s; }
+#edge-peek:focus-visible { outline: 1px solid #eac780; outline-offset: -8px; }
+@keyframes edge-curious {
+  0%, 20% { transform: translateX(16px) rotate(5deg); }
+  40%, 64% { transform: translateX(0) rotate(-6deg); }
+  82%, 100% { transform: translateX(7px) rotate(1deg); }
+}
+@keyframes edge-curious-left {
+  0%, 20% { transform: translateX(-16px) rotate(-5deg); }
+  40%, 64% { transform: translateX(0) rotate(6deg); }
+  82%, 100% { transform: translateX(-7px) rotate(-1deg); }
+}
+#edge-recall {
+  position: fixed; right: 0; top: 119px; z-index: 9; width: 32px; height: 74px;
+  padding: 0; border: 0; background: transparent; cursor: pointer; overflow: hidden;
+  filter: drop-shadow(-2px 2px 3px #38231166); transition: opacity .45s;
+}
+#edge-recall[hidden] { display: none; }
+#edge-recall span { display: block; width: 130px; height: 71px; background: url('assets/cloud-platform-v1.png') left center / 130px 71px no-repeat; }
+body[data-edge-side="left"] #edge-recall { left: 0; right: auto; transform: scaleX(-1); }
+body[data-edge="peeking"] #edge-recall { opacity: .55; }
+#edge-recall:hover, #edge-recall:focus-visible { opacity: 1; filter: drop-shadow(0 0 5px #fbd181); }
+#edge-recall:focus-visible { outline: 2px solid #c2944c; outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) {
+  #root, #stats, #edge-recall, #edge-peek { transition-duration: .01s; }
+  body[data-edge="peeking"] #edge-peek span { animation: none; }
+}

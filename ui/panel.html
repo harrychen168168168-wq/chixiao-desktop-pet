@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'">
+<title>赤霄 · 对话与设置</title><link rel="stylesheet" href="panel.css"></head>
+<body><header><img src="assets/edge-peek-head-v2.png" alt="赤霄"><div><span class="eyebrow">赤霄 · 桌面伙伴</span><h1>主人，我在。</h1><p id="connection">尚未连接 · 桌宠照常陪伴</p></div></header>
+<main>
+<details id="settings"><summary>连接你自己的 AI <span>设置</span></summary>
+<form id="settings-form">
+<label>连接方式<select id="provider"><option value="disabled">暂不连接，先使用桌宠</option><option value="ollama">本机 Ollama · 聊天</option><option value="openclaw">本机 OpenClaw · 智能体</option></select></label>
+<label>本机服务地址<input id="endpoint" placeholder="http://127.0.0.1:11434" spellcheck="false" autocomplete="off" required></label>
+<label id="model-field">已安装的模型名称<input id="model" placeholder="例如你在 Ollama 中安装的模型" autocomplete="off"></label>
+<label id="agent-field" hidden>OpenClaw 智能体名称<input id="agent" value="main" autocomplete="off"></label>
+<label id="token-field" hidden>你自己的网关口令<input id="token" type="password" autocomplete="new-password" placeholder="保存后不再显示口令"><small id="token-state"></small></label>
+<label class="check"><input id="share-system" type="checkbox">回答时附带本机内存、显存和温度</label>
+<p class="hint">默认不连接任何 AI。仅在发送消息时访问你设置的本机服务。OpenClaw 的模型、记忆和执行权限由你自己的 OpenClaw 管理；它可能连接你配置的云端模型。</p>
+<div class="actions"><button type="submit">保存连接</button><button id="forget" type="button" class="quiet">移除口令</button></div>
+</form></details>
+<section id="conversation" aria-label="对话记录" aria-live="polite"><p class="welcome">主人，按住我或祥云可以拖动；拖进屏幕边缘，我会藏好，再偷偷探头看你。<br><br>想聊天时，先在上方连接你自己的 AI。</p></section>
+<p id="notice" role="status"></p>
+<form id="chat-form"><label class="sr-only" for="message">对赤霄说</label><textarea id="message" rows="3" maxlength="12000" placeholder="主人，想跟我说些什么？"></textarea><div class="actions"><button id="send" type="submit">发送</button><button id="stop" type="button" class="quiet" disabled>停止等待</button><button id="clear" type="button" class="quiet end">清空本地对话</button></div></form>
+<footer>资料只保存在这台电脑的赤霄公开版目录。<br>不附带作者的账号、对话或记忆。无遥测、无自动账号连接。</footer>
+</main><script src="panel.js"></script></body></html>

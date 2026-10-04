@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>赤霄</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self'">
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="pet.css">
+</head>
+<body>
+<div id="root">
+  <div id="bubble" hidden>
+    <div id="bubble-list"></div>
+  </div>
+  <div id="pet" title="单击打开对话与设置 · 双击说话 · 来回蹭是摸它 · 滚轮夸它 · 按住拖动 · 右键更多互动">
+    <canvas id="pet-anim" hidden></canvas>
+    <canvas id="status-dragon-fx" aria-hidden="true"></canvas>
+    <canvas id="status-fire-fx" aria-hidden="true"></canvas>
+    <img id="pet-img" alt="" hidden draggable="false">
+    <div id="pet-emoji" aria-hidden="true">🐉</div>
+    <div id="busy-badge" hidden>打包中</div>
+    <div id="zzz" hidden aria-label="睡着了"><i>z</i><i>z</i><i>Z</i></div>
+    <div id="emote" aria-hidden="true"></div>
+    <div id="toy" hidden aria-hidden="true"></div>
+  </div>
+  <div id="stats" aria-label="脚下祥云：内存、显存和温度" title="实时内存、显存和温度 · 拖动祥云可移动赤霄 · 右键更多互动">
+    <canvas id="status-cloud-fx" aria-hidden="true"></canvas>
+    <div class="row" id="row-ram"><span class="k">内存</span><span class="v num" id="v-ram">—</span><span class="meter"><i id="m-ram"></i></span></div>
+    <div class="row" id="row-vram"><span class="k">显存</span><span class="v num" id="v-vram">—</span><span class="meter"><i id="m-vram"></i></span></div>
+    <div class="row" id="row-temp"><span class="k">温度</span><span class="v num" id="v-temp">—</span></div>
+  </div>
+</div>
+<button id="edge-peek" aria-label="赤霄正在探头，点击叫它回来" aria-hidden="true" title="主人，我在这里。点击叫我回来" tabindex="-1"><span><img src="assets/edge-peek-head-v2.png" alt="" draggable="false"></span></button>
+<button id="edge-recall" hidden aria-label="叫赤霄回到桌面" title="赤霄藏在这里 · 点击叫它回来"><span aria-hidden="true"></span></button>
+<script src="format.js"></script>
+
+<script src="assets/pet-anim.js"></script>
+<script src="idle-life.js"></script>
+<script src="fire-field.js"></script>
+<script src="status-life.js"></script>
+<script src="status-inscriptions.js"></script>
+<script src="pet.js"></script>
+</body>
+</html>

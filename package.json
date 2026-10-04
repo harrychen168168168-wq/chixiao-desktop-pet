@@ -1,0 +1,15 @@
+{
+  "name": "chixiao-desktop-pet",
+  "version": "1.0.0",
+  "description": "赤霄 — a local-first Chinese dragon desktop companion",
+  "main": "main.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "audit:release": "node scripts/audit.js",
+    "package:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package.ps1"
+  },
+  "devDependencies": { "electron": "44.4.5" }
+}
