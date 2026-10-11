@@ -4,6 +4,7 @@
   const $ = (id) => document.getElementById(id);
   let active = { running: [], recent: [] };
   let alerts = [];
+  let resetNotices = [];
   let busy = false;          // a build is running: the dragon moves a little faster
   let sleepAfter = 900;      // stay awake for quiet gestures and wandering before lying down
   let quietSince = Date.now();
@@ -12,6 +13,9 @@
   let hovering = false;
   let facing = 'left';
   let edgePhase = 'desktop';
+  let edgeLocked = false;
+  let carrying = false, carryFrame = null, carryFacing = 'left';
+  const carryMotion = new window.CarryMotion();
   const atEdge = () => edgePhase !== 'desktop';
   const idleLife = new window.IdleLife();
   let idleSequence = [], idleActing = false;
@@ -21,9 +25,9 @@
     inscriptions,
     pose: () => $('pet-anim').dataset.pose || player.name, frame: () => Number($('pet-anim').dataset.frame) || 0,
     muted: () => atEdge() || Boolean(pondering) || Boolean(saying) || pressed || hovering });
-  const behavior = () => { if (api.behavior) api.behavior({ action: player.clips[player.name]?.wholeBody ? player.name : player.queued || player.name, blocked: (atEdge() ? Boolean(saying) : telling()) || Boolean(pondering) || pressed, hovering, canWalk: Boolean(player.clips.walk) }); };
+  const behavior = () => { if (api.behavior) api.behavior({ action: player.clips[player.name]?.wholeBody ? player.name : player.queued || player.name, blocked: (atEdge() ? Boolean(saying) : telling()) || Boolean(pondering) || pressed || carryMotion.phase!=='idle', hovering, canWalk: Boolean(player.clips.walk) }); };
   let saying = null;         // what the dragon says, shown in its bubble for a moment: { text, calm }
-  const telling = () => active.running.length > 0 || active.recent.length > 0 || alerts.length > 0 || Boolean(saying && !saying.calm);
+  const telling = () => resetNotices.length > 0 || active.running.length > 0 || active.recent.length > 0 || alerts.length > 0 || Boolean(saying && !saying.calm);
   const tellMind = () => { if (api.petState) api.petState(player.queued === 'lie' ? 'lie' : player.name); behavior(); };
 
   function normalize(meta) {
@@ -59,12 +63,16 @@
     $('pet-emoji').hidden = true;
     tellMind();
     const ctx = canvas.getContext('2d');
-    const tick = () => {
+    player.paint = () => {
       const c = player.clips[player.name];
       ctx.clearRect(0, 0, meta.fw, meta.fh);
       ctx.drawImage(c.img, (player.frame % c.cols) * meta.fw, Math.floor(player.frame / c.cols) * meta.fh, meta.fw, meta.fh, 0, 0, meta.fw, meta.fh);
       canvas.dataset.pose=player.name;canvas.dataset.frame=String(player.frame);
       canvas.dataset.wholeBody=String(Boolean(c.wholeBody));
+    };
+    const tick = () => {
+      const c = player.clips[player.name];
+      player.paint();
       if (player.fade) {             // a quick switch (roar on click) blends out of the previous picture
         ctx.globalAlpha = player.fade.alpha;
         ctx.drawImage(player.fade.snap, 0, 0);
@@ -120,7 +128,7 @@
 
   const asleep = () => player.name === 'sleep' || player.name === 'lie' || player.queued === 'lie';
   function decide() {
-    if (atEdge()) return;
+    if (atEdge() || carrying || carryMotion.phase!=='idle') return;
     if (!player.clips.lie || !player.clips.sleep) return;              // no sleeping clips yet
     const reaction = statusReactions.take(asleep() || moving || pressed || hovering || Boolean(pondering) || Boolean(saying) || player.name !== 'idle' || Boolean(player.queued));
     if (reaction && act(reaction.action)) {
@@ -282,14 +290,26 @@
   }
 
   function renderActive() {
-    const html = [...(saying ? [sayingHtml(saying.text, saying.note)] : []), ...alerts.map(alertHtml), ...active.running.map(runningHtml), ...active.recent.map(doneHtml)];
+    const resetHtml = resetNotices.length ? [`<div class="b-item saying"><span class="b-say">主人，${esc(resetNotices[0].title)}${resetNotices.length > 1 ? `（共 ${resetNotices.length} 条）` : ''}</span><button id="open-resets">查看重置提醒</button></div>`] : [];
+    const html = [...resetHtml, ...(saying ? [sayingHtml(saying.text, saying.note)] : []), ...alerts.map(alertHtml), ...active.running.map(runningHtml), ...active.recent.map(doneHtml)];
     $('bubble').hidden = html.length === 0;
     $('bubble-list').innerHTML = html.join('');
     busy = active.running.length > 0;
     $('busy-badge').hidden = !busy;
     checkNews();
     behavior();
+    layoutBubble();
   }
+
+  function applyResets(s) {
+    const next = (s?.notices || []).filter(n => !n.acknowledgedAt);
+    const changed = next.map(n => n.id).join(',') !== resetNotices.map(n => n.id).join(',');
+    resetNotices = next;
+    if (changed) { renderActive(); if (next.length) rouse('重置提醒'); }
+  }
+  api.on('ai-resets', applyResets);
+  api.resetState?.().then(applyResets);
+  document.addEventListener('click', e => { if (e.target.closest('#open-resets')) api.openResets?.(); });
   const seen = new Set();
   const noticed = {};
   let ready = false;         // what is already there when the pet starts is not news
@@ -304,7 +324,7 @@
       noticed[a.kind] = now;
     }
     if (news.length && ready) {
-      if(atEdge())api.command('edge-return');
+      if(atEdge()&&!edgeLocked)api.command('edge-return');
       rouse(news.join('、'));
     }
   }
@@ -313,11 +333,32 @@
     for (const el of document.querySelectorAll('[data-start]')) el.textContent = clock(Date.now() - new Date(el.dataset.start));
   }, 1000);
   const root = $('root');
-  new ResizeObserver(() => api.size(Math.ceil(root.getBoundingClientRect().height))).observe(root);
+  const bubble=$('bubble');
+  let layoutFrame=null;
+  function layoutBubble() {
+    if(layoutFrame!==null)return;
+    layoutFrame=requestAnimationFrame(()=>{
+      layoutFrame=null;
+      const visible=!bubble.hidden;
+      const h=visible?Math.ceil(bubble.getBoundingClientRect().height):0;
+      document.body.style.setProperty('--edge-head-top',`${h+20}px`);
+      if(document.body.hasAttribute('data-carry-landing'))$('pet-held').style.top=$('pet').getBoundingClientRect().top+'px';
+      api.bubble?.({visible,height:h});
+      api.size(edgeLocked?Math.max(212,h+198):Math.ceil(root.getBoundingClientRect().height),{petTop:$('pet').getBoundingClientRect().top});
+    });
+  }
+  const layoutObserver=new ResizeObserver(layoutBubble);
+  layoutObserver.observe(root);layoutObserver.observe(bubble);
+  function viewport(a) {
+    if(a?.height)document.body.style.setProperty('--bubble-max-height',`${Math.max(48,Math.min(720,a.height)-210)}px`);
+    layoutBubble();
+  }
+  api.on('pet:viewport',viewport);
   let pressed = false;
-  const dragPoint=e=>({x:e.screenX,y:e.screenY,cancelled:['pointercancel','lostpointercapture'].includes(e.type)});
+  const dragPoint=e=>({x:e.screenX,y:e.screenY,clientX:e.clientX,clientY:e.clientY,petTop:$('pet').getBoundingClientRect().top,facing,cancelled:['pointercancel','lostpointercapture'].includes(e.type)});
   root.addEventListener('pointerdown', (e) => {
     if (e.target.closest('button')) return;
+    if(edgeLocked)return; // Alert cards are never a drag-to-unlock surface.
     if (['tucking','hidden','peeking','returning'].includes(edgePhase)) {
       if(e.button===0){e.preventDefault();api.command('edge-return');}return;
     }
@@ -353,30 +394,88 @@
     if (!atEdge() && !asleep() && Date.now() - praisedAt > 5000) { praisedAt = Date.now(); touch('praise'); }
   }, { passive: false });
 
-  $('edge-recall').addEventListener('click', () => api.command('edge-return'));
+  $('edge-recall').addEventListener('click', () => {if(!edgeLocked)api.command('edge-return');});
   $('edge-recall').addEventListener('contextmenu', e => {e.preventDefault();api.menu();});
-  $('edge-peek').addEventListener('click', () => api.command('edge-return'));
+  $('edge-peek').addEventListener('click', () => {if(!edgeLocked)api.command('edge-return');});
   $('edge-peek').addEventListener('contextmenu', e => {e.preventDefault();api.menu();});
   $('edge-peek').addEventListener('pointerenter', () => {hovering=true;behavior();});
   $('edge-peek').addEventListener('pointerleave', () => {hovering=false;behavior();});
-  api.on('pet:edge', s => {
-    if(!s || !['desktop','waiting','approach','tucking','hidden','peeking','returning'].includes(s.phase))return;
-    edgePhase=s.phase;idleSequence=[];idleActing=false;clearTimeout(hoverTimer);
+  for(const handle of [$('edge-recall'),$('edge-peek')]) {
+    handle.addEventListener('pointerdown',e=>{
+      if(!edgeLocked||e.button!==0)return;
+      e.preventDefault();pressed=true;handle.setPointerCapture(e.pointerId);api.down(dragPoint(e));behavior();
+    });
+    handle.addEventListener('pointermove',e=>{if(pressed)api.drag?.(dragPoint(e));});
+    for(const event of ['pointerup','pointercancel','lostpointercapture'])handle.addEventListener(event,release);
+  }
+  function applyEdge(s) {
+    if(!s || !['desktop','waiting','approach','tucking','hidden','peeking','alert-peek','dragging','returning'].includes(s.phase))return;
+    edgePhase=s.phase;edgeLocked=Boolean(s.locked);idleSequence=[];idleActing=false;clearTimeout(hoverTimer);
+    document.body.toggleAttribute('data-edge-locked',edgeLocked);
+    if(edgeLocked){if(bubble.parentElement!==document.body)document.body.append(bubble);}
+    else if(bubble.parentElement!==root)root.prepend(bubble);
     if(s.fromDrag){
-      saying=null;clearTimeout(sayingTimer);pressed=false;hovering=false;
+      pressed=false;hovering=false;
       root.style.transition='none';root.style.transform=`translateX(${Number(s.offset)||0}px)`;
       rouse('拖进屏幕边缘',{roar:false});renderActive();
     }
     if(atEdge())document.body.dataset.edge=edgePhase;else delete document.body.dataset.edge;
     document.body.dataset.edgeSide=s.side==='left'?'left':'right';
-    $('edge-recall').hidden=!['tucking','hidden','peeking'].includes(edgePhase);
-    $('edge-peek').tabIndex=edgePhase==='peeking'?0:-1;
-    $('edge-peek').setAttribute('aria-hidden',String(edgePhase!=='peeking'));
+    $('edge-recall').hidden=!['tucking','hidden','peeking','alert-peek','dragging'].includes(edgePhase);
+    const headVisible=['peeking','alert-peek','dragging'].includes(edgePhase);
+    $('edge-peek').tabIndex=headVisible?0:-1;
+    $('edge-peek').setAttribute('aria-hidden',String(!headVisible));
+    for(const handle of [$('edge-recall'),$('edge-peek')]){
+      const label=edgeLocked?'悬停祥云探头 · 单击打开面板，双击对话 · 向内拖动可解锁':'悬停祥云探头 · 点击叫赤霄回到桌面';
+      handle.title=label;handle.setAttribute('aria-label',label);
+    }
     if(['tucking','hidden','peeking','returning'].includes(edgePhase)&&!s.fromDrag) {
       facing=s.side==='left'?'right':'left';$('pet').style.setProperty('--facing',facing==='right'?-1:1);
     }
     if(edgePhase==='desktop'){quietSince=Date.now();idleLife.rest();hovering=false;}
     if(s.fromDrag){void root.offsetWidth;requestAnimationFrame(()=>{root.style.transition='';root.style.transform='';});}
+    behavior();
+    layoutBubble();
+  }
+  api.on('pet:edge',applyEdge);
+  function drawCarry() {
+    const c=player.clips.happy||player.clips.idle;if(!c)return;
+    const pose=carryMotion.sample(),canvas=$('pet-carry'),ctx=canvas.getContext('2d');
+    if(pose.phase==='held'&&matchMedia('(prefers-reduced-motion: reduce)').matches)pose.frame=32;
+    const fw=$('pet-anim').width,fh=$('pet-anim').height;
+    const w=parseFloat($('pet-anim').style.width),h=parseFloat($('pet-anim').style.height);
+    const right=carryFacing==='right',x=(280-w)/2+(right?-26:26);
+    ctx.setTransform(2,0,0,2,0,0);ctx.clearRect(0,0,280,180);ctx.save();
+    ctx.translate(right?x+w:x,0);ctx.scale(right?-1:1,1);
+    ctx.drawImage(c.img,(pose.frame%c.cols)*fw,Math.floor(pose.frame/c.cols)*fh,fw,fh,0,0,w,h);ctx.restore();
+    canvas.dataset.pose=pose.phase;canvas.dataset.frame=String(pose.frame);
+    if(pose.done){
+      player.name='idle';player.frame=0;player.queued=null;player.fade=null;player.paint?.();
+      document.body.removeAttribute('data-carry-landing');
+      carryFrame=null;quietSince=Date.now();idleLife.rest();behavior();return;
+    }
+    if(carryMotion.phase!=='idle')carryFrame=requestAnimationFrame(drawCarry);
+  }
+  api.on('pet:carry',s=>{
+    carrying=Boolean(s?.active);
+    if(carryFrame!==null){cancelAnimationFrame(carryFrame);carryFrame=null;}
+    document.body.removeAttribute('data-carry-landing');
+    if(carrying){
+      carryFacing=s.facing==='right'?'right':'left';
+      document.body.style.setProperty('--carry-facing',carryFacing==='right'?'-1':'1');
+      $('pet-held').style.top='8px';
+      idleSequence=[];idleActing=false;
+      carryMotion.start();
+      carryMotion.phase='held';carryMotion.at=performance.now();
+    } else if(s?.landed){
+      carryMotion.release();
+      quietSince=Date.now();idleLife.rest();
+      document.body.setAttribute('data-carry-landing','');
+      if(matchMedia('(prefers-reduced-motion: reduce)').matches)carryMotion.duration=1;
+    } else carryMotion.cancel();
+    document.body.toggleAttribute('data-carry',carrying);
+    drawCarry();
+    if(!carrying)layoutBubble();
     behavior();
   });
 
@@ -462,6 +561,8 @@
   api.on('pet:sleep-after', (s) => { sleepAfter = Number(s) || 900; });
 
   api.initial().then((init) => {
+    if(init.edge)applyEdge(init.edge);
+    viewport(init.workArea);
     if (init.pet && init.pet.sleepAfterSeconds) sleepAfter = init.pet.sleepAfterSeconds;
     if (init.pet && Array.isArray(init.pet.idleEverySeconds)) idleLife.every = init.pet.idleEverySeconds;
     latestSystem = init.system; renderSystem(previewSystem || latestSystem);

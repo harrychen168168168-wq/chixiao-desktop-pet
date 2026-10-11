@@ -13,3 +13,14 @@ mind.json
 *.key
 Thumbs.db
 .DS_Store
+ai-resets.json
+reset-settings.json
+edge-lock.json
+pet-preferences.json
+auth.json
+config.json
+Partitions/
+Session Storage/
+Local Storage/
+*.sqlite*
+Cookies*

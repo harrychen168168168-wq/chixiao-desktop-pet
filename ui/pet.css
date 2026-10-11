@@ -204,15 +204,67 @@ body[data-edge="returning"] #edge-peek { transition-duration: .22s; }
 #edge-recall {
   position: fixed; right: 0; top: 119px; z-index: 9; width: 32px; height: 74px;
   padding: 0; border: 0; background: transparent; cursor: pointer; overflow: hidden;
-  filter: drop-shadow(-2px 2px 3px #38231166); transition: opacity .45s;
+  /* Keep this clipped edge handle on a stable transparent surface. Filters and
+     opacity layers can leave dark rectangular seams as the native region shrinks. */
+  filter: none; opacity: 1;
 }
 #edge-recall[hidden] { display: none; }
 #edge-recall span { display: block; width: 130px; height: 71px; background: url('assets/cloud-platform-v1.png') left center / 130px 71px no-repeat; }
 body[data-edge-side="left"] #edge-recall { left: 0; right: auto; transform: scaleX(-1); }
-body[data-edge="peeking"] #edge-recall { opacity: .55; }
-#edge-recall:hover, #edge-recall:focus-visible { opacity: 1; filter: drop-shadow(0 0 5px #fbd181); }
+#edge-recall:hover, #edge-recall:focus-visible { opacity: 1; filter: none; }
 #edge-recall:focus-visible { outline: 2px solid #c2944c; outline-offset: -3px; }
 @media (prefers-reduced-motion: reduce) {
   #root, #stats, #edge-recall, #edge-peek { transition-duration: .01s; }
   body[data-edge="peeking"] #edge-peek span { animation: none; }
+}
+
+/* A carried dragon is a complete suspended pose, never the clipped edge head.
+   Keep captured handles in the DOM until pointerup so a drag cannot get stuck. */
+#pet-held { display: none; position: fixed; left: 0; top: 8px; width: 280px; height: 180px; pointer-events: none; z-index: 30; }
+#pet-carry { width: 280px; height: 180px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.3)); }
+#pet-grabbed { display: none; position: absolute; left: 20px; top: 0; width: 240px; height: 196px; transform: scaleX(var(--carry-facing, 1)); }
+#pet-grabbed img { width: 100%; height: 100%; object-fit: contain; transform-origin: 40% 30%; filter: drop-shadow(0 5px 5px #24100644); }
+body[data-carry] #pet-grabbed { display: block; }
+body[data-carry] #pet-grabbed img { animation: carried-dangle 1.15s ease-in-out infinite; }
+body[data-carry] #pet-carry { visibility: hidden; }
+body[data-carry] #pet-held, body[data-carry-landing] #pet-held { display: block; }
+body[data-carry-landing] #pet { visibility: hidden; }
+body[data-carry] #root, body[data-carry] > #bubble,
+body[data-carry] #edge-peek, body[data-carry] #edge-recall { opacity: 0 !important; }
+body[data-carry] #edge-peek, body[data-carry] #edge-recall { transition: none !important; }
+/* Position the underlying body at the drop point before it becomes visible.
+   Landing is a real sprite sequence; never reuse the edge's sideways return. */
+body[data-carry] #root, body[data-carry-landing] #root { transform: none !important; transition: none !important; }
+body[data-carry-landing] #stats { animation: carry-cloud .22s ease-out both; transition: none; }
+body[data-carry-landing] #status-fire-fx, body[data-carry-landing] #status-dragon-fx { visibility: hidden; }
+@keyframes carry-cloud { from { opacity: 0; } to { opacity: 1; } }
+@keyframes carried-dangle { 0%,100% { transform: rotate(-3deg) scaleY(1); } 50% { transform: rotate(3deg) scaleY(1.025); } }
+@media (prefers-reduced-motion: reduce) { body[data-carry] #pet-grabbed img, body[data-carry-landing] #stats { animation: none; } }
+
+/* Manual edge lock uses the original bubble DOM and head asset. Only the body
+   leaves the window; the notification remains readable inside the work area. */
+#bubble-list { max-height: calc(var(--bubble-max-height, 510px) - 16px); overflow-y: auto; }
+body[data-edge-locked] #root { --edge-offset: 280px; pointer-events: none; }
+body[data-edge-locked][data-edge-side="left"] #root { --edge-offset: -280px; }
+body[data-edge-locked] #stats { opacity: 0; pointer-events: none; }
+body[data-edge-locked] > #bubble {
+  display: none; position: fixed; left: 10px; top: 8px; width: 260px; z-index: 12;
+  margin: 0; pointer-events: auto;
+}
+body[data-edge-locked][data-edge="alert-peek"] > #bubble:not([hidden]),
+body[data-edge-locked][data-edge="dragging"] > #bubble:not([hidden]) { display: block; }
+body[data-edge-locked][data-edge-side="left"] > #bubble::after { left: 26px; }
+body[data-edge-locked][data-edge-side="right"] > #bubble::after { left: auto; right: 26px; }
+body[data-edge-locked][data-edge="alert-peek"] #edge-peek,
+body[data-edge-locked][data-edge="dragging"] #edge-peek {
+  top: var(--edge-head-top, 22px); transform: translateX(0); opacity: 1; pointer-events: auto;
+}
+body[data-edge-locked] #edge-peek, body[data-edge-locked] #edge-recall { cursor: grab; touch-action: none; }
+body[data-edge-locked] #edge-peek:active, body[data-edge-locked] #edge-recall:active { cursor: grabbing; }
+body[data-edge-locked][data-edge="alert-peek"] #edge-recall,
+body[data-edge-locked][data-edge="dragging"] #edge-recall { top: calc(var(--edge-head-top, 22px) + 97px); }
+body[data-edge-locked][data-edge="alert-peek"] #edge-peek span { animation: edge-curious 4.3s ease-in-out both; }
+body[data-edge-locked][data-edge-side="left"][data-edge="alert-peek"] #edge-peek span { animation-name: edge-curious-left; }
+@media (prefers-reduced-motion: reduce) {
+  body[data-edge-locked][data-edge="alert-peek"] #edge-peek span { animation: none; }
 }

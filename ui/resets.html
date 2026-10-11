@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'">
+<title>赤霄 · 用量与重置</title><link rel="stylesheet" href="resets.css"></head>
+<body><header><h1>用量与重置</h1><div class="actions"><button id="refresh">刷新</button><button id="close">关闭</button></div></header>
+<details id="monitor-settings"><summary>选择你要开启的提醒</summary>
+<p class="muted">默认关闭。仅在这台电脑读取你主动选择的来源，不向作者传送数据。</p>
+<label><input id="enable-official" type="checkbox">监测 OpenAI / Claude 官方网站公告</label>
+<label><input id="enable-codex" type="checkbox">读取我已登录的 Codex 额度和订阅日期</label>
+<label><input id="enable-claude" type="checkbox">读取我的 Claude 用量（需在独立官方窗口登录）</label>
+<button id="save-monitors">保存选择</button></details>
+<p id="feedback" role="status"></p><main id="accounts" aria-live="polite"></main>
+<footer><span id="monitor-status"></span><span>本机时间 · 手动关闭提醒</span></footer>
+<details id="connection-details"><summary>读取状态</summary><div id="sources"></div><p class="muted">官网和账户正常时每 15 秒检查。官网缓存或未同步发布的公告可能延迟或遗漏，暂未读到不代表官方没有公告。</p></details>
+<details><summary>已关闭的提醒</summary><div id="history"></div></details>
+<script src="resets.js"></script></body></html>

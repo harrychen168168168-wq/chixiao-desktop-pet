@@ -1,5 +1,7 @@
 const $=id=>document.getElementById(id),api=window.deskPet.public;
 let current,busy=false;
+$('open-ai-resets').onclick=()=>window.deskPet.openResets();
+$('open-chat').onclick=()=>$('message').focus();
 function fields(){const p=$('provider').value;$('model-field').hidden=p!=='ollama';$('agent-field').hidden=p!=='openclaw';$('token-field').hidden=p!=='openclaw';}
 function history(messages){
   if(!messages.length){$('conversation').replaceChildren();const p=document.createElement('p');p.className='welcome';p.textContent='主人，按住赤霄或祥云可以拖动，拖进屏幕边缘就能藏身。想聊天时，请先连接你自己的 AI。';$('conversation').append(p);return;}
