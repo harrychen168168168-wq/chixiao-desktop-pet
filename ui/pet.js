@@ -335,12 +335,16 @@
   const root = $('root');
   const bubble=$('bubble');
   let layoutFrame=null;
+  let viewportHeight=720;
   function layoutBubble() {
     if(layoutFrame!==null)return;
     layoutFrame=requestAnimationFrame(()=>{
       layoutFrame=null;
       const visible=!bubble.hidden;
       const h=visible?Math.ceil(bubble.getBoundingClientRect().height):0;
+      const base=root.getBoundingClientRect().height-(visible&&bubble.parentElement===root?h+12:0);
+      const budget=Math.max(48,Math.min(720,viewportHeight)-(edgeLocked?198:base)-12);
+      document.body.style.setProperty('--bubble-max-height',`${budget}px`);
       document.body.style.setProperty('--edge-head-top',`${h+20}px`);
       if(document.body.hasAttribute('data-carry-landing'))$('pet-held').style.top=$('pet').getBoundingClientRect().top+'px';
       api.bubble?.({visible,height:h});
@@ -350,7 +354,7 @@
   const layoutObserver=new ResizeObserver(layoutBubble);
   layoutObserver.observe(root);layoutObserver.observe(bubble);
   function viewport(a) {
-    if(a?.height)document.body.style.setProperty('--bubble-max-height',`${Math.max(48,Math.min(720,a.height)-210)}px`);
+    if(a?.height)viewportHeight=a.height;
     layoutBubble();
   }
   api.on('pet:viewport',viewport);

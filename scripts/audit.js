@@ -2,10 +2,10 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),cryp
 const root=path.resolve(__dirname,'..');
 const runtime=['package.json','main.js','preload.js','lib/alerts.js','lib/address.js','lib/chat.js','lib/edge-hide.js','lib/lines.js','lib/mind.js','lib/roam.js','lib/settings.js','lib/system.js','lib/util.js','ui/common.css','ui/fire-field.js','ui/format.js','ui/idle-life.js','ui/panel.css','ui/panel.html','ui/panel.js','ui/pet.css','ui/pet.html','ui/pet.js','ui/status-inscriptions.js','ui/status-life.js','ui/assets/pet-anim.js','ui/assets/icon.ico','ui/assets/pet.png','ui/assets/cloud-platform-v1.png','ui/assets/cloud-guardian-v1.png','ui/assets/edge-peek-head-v2.png','README.md','PRIVACY.md','LICENSE'];
 const ctx={window:{}};vm.runInNewContext(fs.readFileSync(path.join(root,'ui/assets/pet-anim.js'),'utf8'),ctx);
-runtime.push('reset-preload.js','lib/reset-preferences.js','lib/codex-reset-source.js','lib/claude-reset-source.js','lib/claude-usage.js','lib/official-web-source.js','lib/reset-monitor.js','lib/reset-window.js','ui/resets.html','ui/resets.css','ui/resets.js','ui/carry-motion.js','ui/assets/chixiao-held-v1.png','CHANGELOG.md');
+runtime.push('reset-preload.js','lib/reset-preferences.js','lib/codex-reset-source.js','lib/claude-reset-source.js','lib/claude-usage.js','lib/official-web-source.js','lib/reset-monitor.js','lib/reset-window.js','lib/reset-announcement.js','lib/reset-upcoming.js','ui/resets.html','ui/resets.css','ui/resets.js','ui/carry-motion.js','ui/assets/chixiao-held-v1.png','CHANGELOG.md');
 runtime.push(...Object.values(ctx.window.PET_ANIM.clips).map(c=>'ui/'+c.src));
 const publicExtras=['.gitignore','package-lock.json','scripts/audit.js','scripts/package.ps1','test/privacy.test.js','test/edge.test.js'];
-publicExtras.push('test/carry.test.js','test/official-web.test.js','test/resets.test.js');
+publicExtras.push('test/carry.test.js','test/official-web.test.js','test/resets.test.js','test/announcements.test.js');
 const allowed=new Set([...runtime,...publicExtras]);
 function walk(dir,prefix=''){
   return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>{

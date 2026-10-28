@@ -5,9 +5,13 @@
   const shortTime = ms => ms ? new Date(ms).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }) : '时间未知';
   const resetTime = ms => ms ? ms <= Date.now() ? '待官方确认恢复' : new Date(ms).toLocaleString('zh-CN', { weekday:'short', hour:'2-digit', minute:'2-digit', hour12:false }).replace(/\s/g,'') + ' 重置' : '重置时间未知';
   const sourceNames = { codex:'Codex 账户', claude:'Claude 账户', 'official:codex-messages':'Codex 工作区通知', 'official:codex-status':'OpenAI 状态公告', 'official:claude-status':'Claude 状态公告' };
-  const official = n => n.kind === 'official' || n.kind === 'official-change';
+  const official = n => n.kind === 'official';
   let state = null, displayed = [], preferencesInitialized=false;
-  function notice(n) { return `<div class="notice"><h3>${esc(n.title)}</h3><p>${esc(n.text)}</p><small>${esc(n.source)} · ${esc(shortTime(n.receivedAt))}</small>${n.url ? `<br><button data-url="${esc(n.url)}">官方原文</button>` : ''}</div>`; }
+  function notice(n) {
+    const observed = n.kind === 'recovered' || n.kind === 'official-change';
+    const times = `${observed ? '检测时间' : '收到时间'} · ${when(n.observation?.detectedAt || n.receivedAt)}${n.publishedAt ? `；公告发布时间 · ${when(n.publishedAt)}` : ''}`;
+    return `<div class="notice"><h3>${esc(n.brief?.title || n.title)}</h3><p>${esc(n.brief?.text || n.text)}</p><small>${esc(n.source)}<br>${esc(times)}</small>${n.url ? `<br><button data-url="${esc(n.url)}">${observed ? '查看用量' : '官方原文'}</button>` : ''}</div>`;
+  }
   function render(s) {
     if (!s) return; state = s;
     if(!preferencesInitialized){for(const key of ['official','codex','claude'])$('enable-'+key).checked=Boolean(s.preferences?.[key]);$('monitor-settings').open=!Object.values(s.preferences||{}).some(Boolean);preferencesInitialized=true;}
@@ -36,9 +40,13 @@
         }
         html += `<div class="credit"><span>可用重置额度</span><span class="credit-value">${c.creditCount == null ? '尚未确认' : c.creditCount === 0 ? '暂无' : `${c.creditCountIsMinimum ? '至少 ' : ''}${c.creditCount} 次`}</span></div>`;
         for (const credit of c.credits || []) html += `<div class="credit-expiry">${esc(credit.title)} · ${credit.expiresAt ? esc(shortTime(credit.expiresAt)) + ' 到期' : '到期时间未提供'}</div>`;
+        if (c.latestRecovery) {
+          const r = c.latestRecovery;
+          html += `<div class="last-recovery"><b>最近额度恢复</b><br>检测时间 · ${esc(when(r.detectedAt))}<div class="muted">${r.previousObservedAt ? `观测区间 · ${esc(when(r.previousObservedAt))} 至 ${esc(when(r.detectedAt))}。` : ''}实际执行时间与原因未由账户接口提供。</div></div>`;
+        }
       }
       const announcements = s.notices.filter(n => n.provider === p && official(n) && (!n.acknowledgedAt || Date.now()-n.receivedAt < 86400000));
-      html += `<div class="system"><span class="system-empty">系统重置公告 · ${announcements.length ? '以下为已读到的官方内容' : '暂未读到官方公布的时间'}</span>${announcements.map(notice).join('')}${alerts.filter(n => n.kind !== 'credit' && !official(n)).map(notice).join('')}</div>`;
+      html += `<div class="system"><span class="system-empty">系统重置公告 · ${announcements.length ? '已读内容见下方，标题与要点为本机转述' : '暂未读到官方公布的时间'}</span>${announcements.map(notice).join('')}${alerts.filter(n => n.kind !== 'credit' && !official(n)).map(notice).join('')}</div>`;
       if (p === 'claude' && !src?.ok && !src?.disabled) html += '<p><button id="connect-claude">连接 Claude</button></p>';
       return html + '</article>';
     }).join('');

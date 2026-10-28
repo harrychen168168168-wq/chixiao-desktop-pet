@@ -24,6 +24,7 @@
   }
   function int(n) { return Math.round(n).toLocaleString('en-US'); }
   function clock(ms) {
+    if (!Number.isFinite(ms)) return '时间未知';
     const s = Math.max(0, Math.floor(ms / 1000));
     const h = Math.floor(s / 3600);
     const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
