@@ -8,7 +8,7 @@
 
 ## 下载即用（Windows x64）
 
-在本仓库 **Releases** 下载 `Chixiao-Windows-x64-1.2.0.zip`，完整解压后运行 `Chixiao.exe`。不需要安装 Node.js，不需要管理员权限。请保留解压后的其他文件。
+在本仓库 **Releases** 下载 `Chixiao-Windows-x64-1.2.1.zip`，完整解压后运行 `Chixiao.exe`。不需要安装 Node.js，不需要管理员权限。请保留解压后的其他文件。
 
 这是未签名的便携版，Windows 可能显示发布者未知。发布页同时提供 SHA-256 校验文件。Windows 10/11 x64 为当前发行目标；macOS / Linux 尚未打包验证。
 
