@@ -21,6 +21,7 @@
       const alerts = pending.filter(n => n.provider === p);
       let html = `<article class="account" id="account-${p}"><div class="account-head"><h2>${p === 'claude' ? 'Claude' : 'Codex'}</h2>${alerts.length ? '<span class="pending-label">新提醒</span>' : ''}</div>`;
       if (stale) html += `<p class="error">${esc(src?.error || '正在读取…')}${c ? '（显示上次数据）' : ''}</p>`;
+      else if (src.warning) html += `<p class="muted">${esc(src.warning)}</p>`;
       html += `<div class="plan"><span>当前订阅套餐 · ${esc(c?.planName || (src?.disabled ? '未开启读取' : '读取中'))}</span></div>`;
       html += `<div class="subscription">${c?.subscription?.dateKind === 'renewal' ? '套餐自动续费日' : '套餐到期日'} · ${esc(c?.subscription?.dateText || '未读到官方日期')}</div>`;
       if (c?.subscription?.source) {

@@ -45,6 +45,22 @@ test('weekly recovery and credits deduplicate; five-hour quota stays hidden; man
   m.accept('codex',{...account,windows:[{...account.windows[0],usedPercent:0,resetAt:now+604800000}]});
   m.acknowledge(ids);assert(m.snapshot().notices.some(n=>!n.acknowledgedAt&&n.kind==='recovered'));
 });
+test('Claude usage page wording without 当前会话 or 每周 is still recognised and read',()=>{
+  const {USAGE_PAGE,noResetOffer,usageDetails}=require('../lib/claude-usage');
+  const page='您的用量\nPro\n本周\n\n星期一09:00 重置\n已使用 40%\n限额重置\n\n暂无重置\n\n云会话额度\n包含的额度\n6月20日 过期\n剩余 US$80（共 US$100）\n用量额度\n';
+  assert(USAGE_PAGE.test(page));assert(noResetOffer(page));
+  for(const older of ['当前会话','Current session','Weekly limits','每周限额','目前工作階段'])assert(USAGE_PAGE.test(older));
+  assert(!USAGE_PAGE.test('新建会话\n最近使用\n'));
+  assert.deepEqual([usageDetails(page).cloudCredits.remaining,usageDetails(page).cloudCredits.total],[80,100]);
+});
+test('an unrecognised Claude page still updates percentages, keeps the rest unknown, and the warning clears',()=>{
+  const m=fixture(),windows=[{id:'seven_day',label:'每周',windowDurationMins:10080,usedPercent:40,resetAt:now+86400000}];
+  m.accept('claude',{identity:'synthetic',windows,creditCount:null,warning:'重置次数未确认'});
+  assert.equal(m.snapshot().sources.claude.ok,true);assert.equal(m.snapshot().sources.claude.warning,'重置次数未确认');
+  assert.equal(m.snapshot().accounts.claude.windows[0].usedPercent,40);assert.equal(m.snapshot().accounts.claude.creditCount,null);
+  m.accept('claude',{identity:'synthetic',windows,creditCount:0,warning:null});
+  assert.equal(m.snapshot().sources.claude.warning,undefined);
+});
 test('Claude subscription is never taken from cloud credit expiry',()=>{
   const {subscriptionDetails,usageWindows}=require('../lib/claude-usage');
   assert.equal(subscriptionDetails('云会话额度\n6月20日 过期\n剩余 US$80（共 US$100）').dateText,null);
